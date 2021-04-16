@@ -11,6 +11,7 @@ const {
 } = require("../build/sync-translated-content");
 const log = require("loglevel");
 const cheerio = require("cheerio");
+const glob = require("glob");
 
 const { DEFAULT_LOCALE, VALID_LOCALES } = require("../libs/constants");
 const {
@@ -741,6 +742,40 @@ if (Mozilla && !Mozilla.dntEnabled()) {
   .action(
     tryOrExit(async ({ options }) => {
       await buildSPAs(options);
+    })
+  )
+
+  .command(
+    "distill",
+    "Extract the main content from one or more built documents"
+  )
+  .argument("<folderIn>", "folder of documents to distill")
+  .argument("<folderOut>", "folder in which to output distilled documents")
+  .action(
+    tryOrExit(async ({ args }) => {
+      const { folderIn, folderOut } = args;
+      console.log(`from: ${folderIn}`);
+      console.log(`to: ${folderOut}`);
+      const counts = { skipped: 0, distilled: 0 };
+      const htmlFiles = glob.sync(`${folderIn}/**/index.html`);
+      console.log(`found: ${htmlFiles.length} HTML files`);
+      for (const filePath of htmlFiles) {
+        if (filePath.includes("/_samples_/")) {
+          counts.skipped++;
+          continue;
+        }
+        const html = fs.readFileSync(filePath, "utf8");
+        const $ = cheerio.load(html);
+        const title = $("head > title").html();
+        const content = $("main").html();
+        const output = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body><main>${content}</main></body></html>`;
+        const outfilePath = filePath.replace(folderIn, folderOut);
+        console.log(outfilePath);
+        fs.mkdirSync(path.dirname(outfilePath), { recursive: true });
+        fs.writeFileSync(outfilePath, output);
+        counts.distilled++;
+      }
+      console.log(`distilled: ${counts.distilled}, skipped: ${counts.skipped}`);
     })
   )
 
