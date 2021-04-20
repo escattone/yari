@@ -751,6 +751,8 @@ if (Mozilla && !Mozilla.dntEnabled()) {
   )
   .argument("<folderIn>", "folder of documents to distill")
   .argument("<folderOut>", "folder in which to output distilled documents")
+  // For example:
+  // yarn tool distill ./client/build/en-us/docs/mozilla/projects/nss ../nss-docs/en-us/docs/mozilla/projects/nss
   .action(
     tryOrExit(async ({ args }) => {
       const { folderIn, folderOut } = args;
@@ -766,13 +768,13 @@ if (Mozilla && !Mozilla.dntEnabled()) {
         }
         const html = fs.readFileSync(filePath, "utf8");
         const $ = cheerio.load(html);
-        const title = $("head > title").html();
-        const content = $("main").html();
-        const output = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body><main>${content}</main></body></html>`;
+        // const title = $("head > title").html();
+        const content = $("article.main-page-content").html();
+        // const output = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body><main>${content}</main></body></html>`;
         const outfilePath = filePath.replace(folderIn, folderOut);
         console.log(outfilePath);
         fs.mkdirSync(path.dirname(outfilePath), { recursive: true });
-        fs.writeFileSync(outfilePath, output);
+        fs.writeFileSync(outfilePath, content);
         counts.distilled++;
       }
       console.log(`distilled: ${counts.distilled}, skipped: ${counts.skipped}`);
