@@ -212,6 +212,19 @@ exports.handler = async (event) => {
     } else {
       request.origin.custom.path = "/main";
     }
+  } else if (
+    request.origin.custom &&
+    request.origin.custom.domainName === "sentry.prod.mozaws.net"
+  ) {
+    if (request.origin.custom.path === "/api/72/security") {
+      // Sentry CSP reporting for stage
+      request.uri = "/";
+      request.querystring = "sentry_key=25e652a045b642dfaa310e92e800058a";
+    } else if (request.origin.custom.path === "/api/73/security") {
+      // Sentry CSP reporting for production
+      request.uri = "/";
+      request.querystring = "sentry_key=8664389dc16c4e9786e4a396f2964952";
+    }
   }
   return request;
 };
